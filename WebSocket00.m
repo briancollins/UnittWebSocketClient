@@ -36,6 +36,8 @@
 - (NSString*) getServerProtocol:(NSString*) aResponse;
 @end
 
+int randFromRange(int min, int max);
+
 
 @implementation WebSocket00
 
