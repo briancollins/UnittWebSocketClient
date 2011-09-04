@@ -66,20 +66,13 @@ typedef NSUInteger WebSocketReadyState;
 {
 @private
     id<WebSocket00Delegate> delegate;
-    NSURL* url;
-    NSString* origin;
-    AsyncSocket* socket;
     WebSocketReadyState readystate;
-    NSError* closingError;
     BOOL isSecure;
     NSTimeInterval timeout;
-    NSDictionary* tlsSettings;
-    NSArray* protocols;
     NSString* serverProtocol;
     NSString* key1;
     NSString* key2;
     NSData* key3;
-    NSData* serverHandshake;
     BOOL verifyHandshake;
 }
 
@@ -87,7 +80,12 @@ typedef NSUInteger WebSocketReadyState;
 /**
  * Callback delegate for websocket events.
  **/
-@property(nonatomic,retain) id<WebSocket00Delegate> delegate;
+@property(nonatomic,assign) id<WebSocket00Delegate> delegate;
+
+@property (nonatomic, retain) NSError *closingError;
+@property (nonatomic, retain) NSData *serverHandshake;
+
+@property (nonatomic, retain) AsyncSocket *socket;
 
 /**
  * Timeout used for sending messages, not establishing the socket connection. A
@@ -98,13 +96,13 @@ typedef NSUInteger WebSocketReadyState;
 /**
  * URL of the websocket
  **/
-@property(nonatomic,readonly) NSURL* url;
+@property (nonatomic, retain) NSURL *url;
 
 /**
  * Origin is used more in a browser setting, but it is intended to prevent cross-site scripting. If
  * nil, the client will fill this in using the url provided by the websocket.
  **/
-@property(nonatomic,readonly) NSString* origin;
+@property (nonatomic, copy) NSString *origin;
 
 /**
  * Represents the state of the connection. It can have the following values:
@@ -134,12 +132,12 @@ typedef NSUInteger WebSocketReadyState;
  * 
  * If the value is nil or an empty dictionary, then the websocket cannot be secured.
  **/
-@property(nonatomic,readonly) NSDictionary* tlsSettings;
+@property (nonatomic, retain) NSDictionary *tlsSettings;
 
 /**
  * The subprotocols supported by the client. Each subprotocol is represented by an NSString.
  **/
-@property(nonatomic,readonly) NSArray* protocols;
+@property(nonatomic,retain) NSArray* protocols;
 
 /**
  * True if the client should verify the handshake values sent by the server. Since many of
@@ -151,7 +149,7 @@ typedef NSUInteger WebSocketReadyState;
 /**
  * The subprotocol selected by the server, nil if none was selected
  **/
-@property(nonatomic,readonly) NSString* serverProtocol;
+@property(nonatomic,copy) NSString* serverProtocol;
 
 
 + (id) webSocketWithURLString:(NSString*) aUrlString delegate:(id<WebSocket00Delegate>) aDelegate origin:(NSString*) aOrigin protocols:(NSArray*) aProtocols tlsSettings:(NSDictionary*) aTlsSettings verifyHandshake:(BOOL) aVerifyHandshake;

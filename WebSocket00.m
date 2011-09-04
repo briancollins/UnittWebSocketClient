@@ -60,7 +60,9 @@ enum
 @synthesize protocols;
 @synthesize verifyHandshake;
 @synthesize serverProtocol;
-
+@synthesize closingError;
+@synthesize serverHandshake;
+@synthesize socket;
 
 #pragma mark Public Interface
 - (void) open
@@ -275,7 +277,7 @@ int randFromRange(int min, int max)
     [challenge appendBytes:(char*)&key2int length:4];
     [challenge appendBytes:[key3 bytes] length:8];
     
-    serverHandshake = [[self getMD5:challenge] retain];
+    self.serverHandshake = [self getMD5:challenge];
 }
 
 - (BOOL) isUpgradeResponse: (NSString*) aResponse
@@ -310,7 +312,7 @@ int randFromRange(int min, int max)
             if (!verifiedHandshake)
             {
                 NSData* handshakeData = [item dataUsingEncoding:NSASCIIStringEncoding];
-                verifiedHandshake = [handshakeData rangeOfData:serverHandshake options:NSDataSearchBackwards range:NSMakeRange(0, [handshakeData length])].length > 0;
+                verifiedHandshake = [handshakeData rangeOfData:self.serverHandshake options:NSDataSearchBackwards range:NSMakeRange(0, [handshakeData length])].length > 0;
             }
             
             //if we have what we need, get out
@@ -357,7 +359,6 @@ int randFromRange(int min, int max)
     if (delegate)
     {
         [delegate didClose: aError];
-        [aError release];
     }
 }
 
@@ -382,7 +383,7 @@ int randFromRange(int min, int max)
 - (void) onSocketDidDisconnect:(AsyncSocket*) aSock 
 {
     readystate = WebSocketReadyStateClosed;
-    [self dispatchClosed: closingError];
+    [self dispatchClosed:self.closingError];
 }
 
 - (void) onSocket:(AsyncSocket *) aSocket willDisconnectWithError:(NSError *) aError
@@ -394,7 +395,7 @@ int randFromRange(int min, int max)
             readystate = WebSocketReadyStateClosing;
             [self dispatchFailure:aError];
         case WebSocketReadyStateClosing:
-            closingError = [aError retain]; 
+            self.closingError = aError; 
     }
 }
 
@@ -445,7 +446,7 @@ int randFromRange(int min, int max)
             NSString* protocol = [self getServerProtocol:response];
             if (protocol)
             {
-                serverProtocol = [protocol copy];
+                self.serverProtocol = protocol;
             }
             
             //handle state & delegates
@@ -490,27 +491,27 @@ int randFromRange(int min, int max)
         }
         
         //apply properties
-        url = [tempUrl retain];
+        self.url = tempUrl;
         self.delegate = aDelegate;
         isSecure = [self.url.scheme isEqualToString:@"wss"];
         if (aOrigin)
         {
-            origin = [aOrigin copy];
+            self.origin = aOrigin;
         }
         else
         {
-            origin = [[self buildOrigin] copy];
+            self.origin = [self buildOrigin];
         }
         if (aProtocols)
         {
-            protocols = [aProtocols retain];
+            self.protocols = aProtocols;
         }
         if (aTlsSettings)
         {
-            tlsSettings = [aTlsSettings retain];
+            self.tlsSettings = aTlsSettings;
         }
         verifyHandshake = NO;
-        socket = [[AsyncSocket alloc] initWithDelegate:self];
+        self.socket = [[[AsyncSocket alloc] initWithDelegate:self] autorelease];
         self.timeout = 30.0;
     }
     return self;
@@ -519,14 +520,14 @@ int randFromRange(int min, int max)
 -(void) dealloc 
 {
     socket.delegate = nil;
-    [socket disconnect];
-    [socket release];
-    [delegate release];
-    [url release];
-    [origin release];
-    [closingError release];
-    [protocols release];
-    [tlsSettings release];
+    self.serverHandshake = nil;
+    [self.socket disconnect];
+    self.socket = nil;
+    self.url = nil;
+    self.origin = nil;
+    self.closingError = nil;
+    self.protocols = nil;
+    self.tlsSettings = nil;
     [super dealloc];
 }
 
